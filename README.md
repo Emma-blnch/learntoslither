@@ -147,6 +147,7 @@ pip install -r requirements.txt
 
 # Mémoire avec faulthandler (segfaults extensions C)
 PYTHONFAULTHANDLER=1 ./scripts/snake -sessions 1000 -visual off
+valgrind --tool=memcheck ./scripts/snake
 
 # Surveillance RAM pendant un long training
 ./scripts/snake -sessions 10000 -visual off -save models/10000sess.json &
