@@ -80,7 +80,7 @@ def run_session(board, interp, agent, display, visual, session):
         max_length = max(max_length, board.snake.length)
 
     agent.decay_epsilon()
-    return max_length, step
+    return max_length, step, alive
 
 
 def main():
@@ -108,7 +108,7 @@ def main():
     overall_max_duration = 0
 
     for session in range(1, args.sessions + 1):
-        max_length, duration = run_session(
+        max_length, duration, alive = run_session(
             board, interp, agent, display, visual, session
         )
         overall_max_length = max(overall_max_length, max_length)
@@ -118,6 +118,8 @@ def main():
                 f'Session {session}/{args.sessions} — '
                 f'length: {max_length}, steps: {duration}'
             )
+        if not alive:
+            break
 
     print(
         f'Game over, max length = {overall_max_length}, '
