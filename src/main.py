@@ -1,5 +1,6 @@
 import argparse
-from constants import BOARD_SIZE, FPS_DEFAULT
+import sys
+from constants import BOARD_SIZE, FPS_DEFAULT, SNAKE_START_LENGTH
 from environment import Board
 from interpreter import Interpreter
 from display import Display
@@ -71,6 +72,13 @@ def main():
     visual = args.visual == 'on'
     headless = not visual
 
+    if args.board_size < SNAKE_START_LENGTH:
+        print(
+            f'Error: board-size must be at least {SNAKE_START_LENGTH}',
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     max_steps = args.max_steps or args.board_size ** 2 * 10
 
     board = Board(size=args.board_size)
@@ -82,8 +90,17 @@ def main():
     )
 
     if args.load:
-        print(f'Load trained model from {args.load}')
-        agent.load(args.load)
+        try:
+            agent.load(args.load)
+            print(f'Load trained model from {args.load}')
+        except FileNotFoundError:
+            print(f'Error: model file not found: {args.load}')
+            display.close()
+            sys.exit(1)
+        except (ValueError, KeyError):
+            print(f'Error: invalid model file: {args.load}')
+            display.close()
+            sys.exit(1)
 
     display.set_speed(args.speed)
     display.set_step_by_step(args.step_by_step)
@@ -112,8 +129,11 @@ def main():
     )
 
     if args.save:
-        agent.save(args.save)
-        print(f'Save learning state in {args.save}')
+        try:
+            agent.save(args.save)
+            print(f'Save learning state in {args.save}')
+        except OSError as e:
+            print(f'Error: cannot save model: {e}')
 
     display.close()
 
