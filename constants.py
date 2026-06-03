@@ -1,0 +1,52 @@
+from enum import Enum
+
+
+class Action(Enum):
+    UP = 0
+    DOWN = 1
+    LEFT = 2
+    RIGHT = 3
+
+
+class Cell(Enum):
+    EMPTY = '0'
+    HEAD = 'H'
+    BODY = 'S'
+    GREEN = 'G'
+    RED = 'R'
+    WALL = 'W'
+
+
+BOARD_SIZE = 10
+SNAKE_START_LENGTH = 3
+GREEN_APPLE_COUNT = 2
+RED_APPLE_COUNT = 1
+
+REWARD_GREEN = 10.0
+REWARD_RED = -10.0
+REWARD_STEP = -0.1
+REWARD_DEATH = -100.0
+
+COLOR_BG = (200, 200, 200)
+COLOR_GRID = (170, 170, 170)
+COLOR_SNAKE_HEAD = (0, 0, 180)
+COLOR_SNAKE_BODY = (0, 0, 255)
+COLOR_GREEN_APPLE = (0, 200, 0)
+COLOR_RED_APPLE = (220, 0, 0)
+
+CELL_SIZE = 60
+FPS_DEFAULT = 10
+FPS_FAST = 60
+
+ALPHA = 0.1
+GAMMA = 0.9
+EPSILON_START = 1.0
+EPSILON_MIN = 0.01
+EPSILON_DECAY = 0.995
+
+DIRECTION_DELTA = {
+    Action.UP: (-1, 0),
+    Action.DOWN: (1, 0),
+    Action.LEFT: (0, -1),
+    Action.RIGHT: (0, 1),
+}
