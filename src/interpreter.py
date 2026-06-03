@@ -31,12 +31,14 @@ class Interpreter:
         return vision
 
     def get_state_key(self, vision):
-        return (
-            vision[Action.UP],
-            vision[Action.DOWN],
-            vision[Action.LEFT],
-            vision[Action.RIGHT],
-        )
+        _danger = {Cell.WALL.value, Cell.BODY.value, Cell.HEAD.value}
+        state = []
+        for action in [Action.UP, Action.DOWN, Action.LEFT, Action.RIGHT]:
+            v = vision[action]
+            state.append(int(v[0] in _danger))
+            state.append(int(Cell.GREEN.value in v))
+            state.append(int(Cell.RED.value in v))
+        return tuple(state)
 
     def get_reward(self, event):
         return _EVENT_REWARDS[event]

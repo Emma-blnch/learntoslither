@@ -1,7 +1,7 @@
 #!/bin/bash
 # Headless training (no display, fast)
-# Usage: ./scripts/train.sh -sessions 1000 -save models/1000sess.txt
-# Example: ./scripts/train.sh -sessions 100 -save models/100sess.txt -board-size 10
+# Usage: ./scripts/train.sh -sessions 1000 -save models/1000sess.json
+# Example: ./scripts/train.sh -sessions 100 -save models/100sess.json -board-size 10
 
 set -e
 

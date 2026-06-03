@@ -24,4 +24,4 @@ RUN mkdir -p models
 ENV PYTHONUNBUFFERED=1
 ENV SDL_VIDEODRIVER=x11
 
-ENTRYPOINT ["python3", "main.py"]
+ENTRYPOINT ["python3", "src/main.py"]

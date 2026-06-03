@@ -1,7 +1,7 @@
 #!/bin/bash
 # Run with graphical display (X11 forwarding)
 # Usage: ./scripts/run.sh [snake args...]
-# Example: ./scripts/run.sh -sessions 10 -visual on -load models/100sess.txt
+# Example: ./scripts/run.sh -sessions 10 -visual on -load models/100sess.json
 
 set -e
 

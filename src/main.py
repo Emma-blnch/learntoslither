@@ -1,29 +1,9 @@
 import argparse
-import random
-from constants import Action, BOARD_SIZE, FPS_DEFAULT
+from constants import BOARD_SIZE, FPS_DEFAULT
 from environment import Board
 from interpreter import Interpreter
 from display import Display
-
-
-class _RandomAgent:
-    def choose_action(self, state):
-        return random.choice(list(Action))
-
-    def update(self, state, action, reward, next_state):
-        pass
-
-    def save(self, path):
-        pass
-
-    def load(self, path):
-        pass
-
-    def set_learning(self, enabled):
-        pass
-
-    def decay_epsilon(self):
-        pass
+from agent import Agent
 
 
 def parse_args():
@@ -42,10 +22,13 @@ def parse_args():
                    dest='board_size', metavar='N')
     p.add_argument('-speed', type=int, default=FPS_DEFAULT,
                    metavar='FPS')
+    p.add_argument('-max-steps', type=int, default=0,
+                   dest='max_steps', metavar='N',
+                   help='max steps per session (0 = board_size^2 * 10)')
     return p.parse_args()
 
 
-def run_session(board, interp, agent, display, visual, session):
+def run_session(board, interp, agent, display, visual, session, max_steps):
     board.reset()
     step = 0
     max_length = board.snake.length
@@ -54,7 +37,7 @@ def run_session(board, interp, agent, display, visual, session):
     vision = interp.get_vision(board, board.snake)
     state = interp.get_state_key(vision)
 
-    while not board.is_game_over and alive:
+    while not board.is_game_over and alive and step < max_steps:
         action = agent.choose_action(state)
         event = board.apply_action(action)
         reward = interp.get_reward(event)
@@ -88,9 +71,11 @@ def main():
     visual = args.visual == 'on'
     headless = not visual
 
+    max_steps = args.max_steps or args.board_size ** 2 * 10
+
     board = Board(size=args.board_size)
     interp = Interpreter()
-    agent = _RandomAgent()
+    agent = Agent()
     display = Display(
         board_size=args.board_size,
         headless=headless,
@@ -109,7 +94,7 @@ def main():
 
     for session in range(1, args.sessions + 1):
         max_length, duration, alive = run_session(
-            board, interp, agent, display, visual, session
+            board, interp, agent, display, visual, session, max_steps
         )
         overall_max_length = max(overall_max_length, max_length)
         overall_max_duration = max(overall_max_duration, duration)
