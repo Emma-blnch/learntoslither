@@ -101,19 +101,16 @@ pip install -r requirements.txt
 ./scripts/snake -sessions 1000 -visual off -save models/1000sess.json
 
 # Charger un modèle et continuer à apprendre
-./scripts/snake -sessions 500 -visual off \
-    -load models/1000sess.json -save models/1500sess.json
+./scripts/snake -sessions 500 -visual off -load models/1000sess.json -save models/1500sess.json
 ```
 
 ### Évaluation des modèles (sans apprentissage)
 ```bash
 # Évaluer un modèle sur 20 sessions
-./scripts/snake -sessions 20 -visual off \
-    -load models/1000sess.json -dontlearn
+./scripts/snake -sessions 20 -visual off -load models/1000sess.json -dontlearn
 
 # Évaluer avec affichage et step-by-step
-./scripts/snake -sessions 3 -visual on \
-    -load models/1000sess.json -dontlearn -step-by-step -speed 5
+./scripts/snake -sessions 3 -visual on -load models/1000sess.json -dontlearn -step-by-step -speed 5
 
 # Comparer 3 niveaux d'entraînement
 ./scripts/snake -sessions 20 -visual off -load models/1sess.json   -dontlearn
@@ -124,12 +121,10 @@ pip install -r requirements.txt
 ### Bonus — taille de board variable
 ```bash
 # Board 5x5 avec le modèle entraîné sur 10x10
-./scripts/snake -sessions 5 -visual on \
-    -load models/1000sess.json -dontlearn -board-size 5
+./scripts/snake -sessions 5 -visual on -load models/1000sess.json -dontlearn -board-size 5
 
 # Board 20x20 avec le même modèle
-./scripts/snake -sessions 5 -visual on \
-    -load models/1000sess.json -dontlearn -board-size 20
+./scripts/snake -sessions 5 -visual on -load models/1000sess.json -dontlearn -board-size 20
 ```
 
 ### Générer les modèles obligatoires (soutenance)
@@ -143,7 +138,7 @@ pip install -r requirements.txt
 ### Vérification mémoire et qualité
 ```bash
 # Norme flake8 (via Docker)
-./scripts/norm.sh
+flake8 ./src
 
 # Mémoire avec faulthandler (segfaults extensions C)
 PYTHONFAULTHANDLER=1 ./scripts/snake -sessions 1000 -visual off
