@@ -1,5 +1,8 @@
 import argparse
+import json
+import os
 import sys
+from collections import Counter
 from constants import BOARD_SIZE, FPS_DEFAULT, SNAKE_START_LENGTH
 from environment import Board
 from interpreter import Interpreter
@@ -26,6 +29,9 @@ def parse_args():
     p.add_argument('-max-steps', type=int, default=0,
                    dest='max_steps', metavar='N',
                    help='max steps per session (0 = board_size^2 * 10)')
+    p.add_argument('-stats-out', type=str, default=None,
+                   dest='stats_out', metavar='PATH',
+                   help='save per-session statistics as JSON to PATH')
     return p.parse_args()
 
 
@@ -34,6 +40,9 @@ def run_session(board, interp, agent, display, visual, session, max_steps):
     step = 0
     max_length = board.snake.length
     alive = True
+    event = None
+    green_eaten = 0
+    red_eaten = 0
 
     vision = interp.get_vision(board, board.snake)
     state = interp.get_state_key(vision)
@@ -43,13 +52,18 @@ def run_session(board, interp, agent, display, visual, session, max_steps):
         event = board.apply_action(action)
         reward = interp.get_reward(event)
 
+        if event == 'green':
+            green_eaten += 1
+        elif event == 'red':
+            red_eaten += 1
+
         next_vision = interp.get_vision(board, board.snake)
         next_state = interp.get_state_key(next_vision)
 
         agent.update(state, action, reward, next_state)
 
         if visual:
-            print(interp.format_terminal(vision, action))
+            print(interp.format_terminal(next_vision, action))
 
         alive = display.render(
             board,
@@ -64,7 +78,76 @@ def run_session(board, interp, agent, display, visual, session, max_steps):
         max_length = max(max_length, board.snake.length)
 
     agent.decay_epsilon()
-    return max_length, step, alive
+
+    if board.is_game_over:
+        outcome = event
+    elif not alive:
+        outcome = 'quit'
+    else:
+        outcome = 'timeout'
+
+    return {
+        'session': session,
+        'length': max_length,
+        'steps': step,
+        'alive': alive,
+        'outcome': outcome,
+        'green_eaten': green_eaten,
+        'red_eaten': red_eaten,
+    }
+
+
+def _summarize_stats(records):
+    if not records:
+        return None
+    lengths = [r['length'] for r in records]
+    steps = [r['steps'] for r in records]
+    n = len(records)
+    return {
+        'sessions_run': n,
+        'length_max': max(lengths),
+        'length_avg': sum(lengths) / n,
+        'steps_max': max(steps),
+        'steps_avg': sum(steps) / n,
+        'green_eaten_total': sum(r['green_eaten'] for r in records),
+        'red_eaten_total': sum(r['red_eaten'] for r in records),
+        'outcomes': dict(Counter(r['outcome'] for r in records)),
+    }
+
+
+def print_stats_summary(records):
+    summary = _summarize_stats(records)
+    if summary is None:
+        return
+    outcomes = ', '.join(
+        f'{k}={v}' for k, v in sorted(summary['outcomes'].items())
+    )
+    print('--- Stats ---')
+    print(
+        f"Length — max: {summary['length_max']}, "
+        f"avg: {summary['length_avg']:.2f}"
+    )
+    print(
+        f"Steps  — max: {summary['steps_max']}, "
+        f"avg: {summary['steps_avg']:.2f}"
+    )
+    print(
+        f"Apples — green: {summary['green_eaten_total']}, "
+        f"red: {summary['red_eaten_total']}"
+    )
+    print(f'Outcomes — {outcomes}')
+
+
+def save_stats(path, records):
+    data = {
+        'sessions': records,
+        'summary': _summarize_stats(records),
+    }
+    dirname = os.path.dirname(path)
+    if dirname:
+        os.makedirs(dirname, exist_ok=True)
+    with open(path, 'w') as f:
+        json.dump(data, f, indent=2)
 
 
 def main():
@@ -108,25 +191,36 @@ def main():
 
     overall_max_length = 0
     overall_max_duration = 0
+    session_records = []
 
     for session in range(1, args.sessions + 1):
-        max_length, duration, alive = run_session(
+        record = run_session(
             board, interp, agent, display, visual, session, max_steps
         )
-        overall_max_length = max(overall_max_length, max_length)
-        overall_max_duration = max(overall_max_duration, duration)
+        session_records.append(record)
+        overall_max_length = max(overall_max_length, record['length'])
+        overall_max_duration = max(overall_max_duration, record['steps'])
         if not headless:
             print(
                 f'Session {session}/{args.sessions} — '
-                f'length: {max_length}, steps: {duration}'
+                f"length: {record['length']}, steps: {record['steps']}"
             )
-        if not alive:
+        if not record['alive']:
             break
 
     print(
         f'Game over, max length = {overall_max_length}, '
         f'max duration = {overall_max_duration}'
     )
+
+    print_stats_summary(session_records)
+
+    if args.stats_out:
+        try:
+            save_stats(args.stats_out, session_records)
+            print(f'Save session statistics in {args.stats_out}')
+        except OSError as e:
+            print(f'Error: cannot save statistics: {e}')
 
     if args.save:
         try:

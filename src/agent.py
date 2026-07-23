@@ -37,7 +37,8 @@ class Agent:
         q_vals = {a: self.q_table[state][a] for a in Action}
         max_q = max(q_vals.values())
         best = [a for a, v in q_vals.items() if v == max_q]
-        return random.choice(best)
+        safe = [a for a in best if not state[a.value * 3]]
+        return random.choice(safe or best)
 
     def update(self, state, action, reward, next_state):
         if not self._learning:

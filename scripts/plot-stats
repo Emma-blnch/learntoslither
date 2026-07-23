@@ -1,0 +1,9 @@
+#!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$SCRIPT_DIR"
+
+if [ -f ".venv/bin/python3" ]; then
+    exec ".venv/bin/python3" src/plot_stats.py "$@"
+else
+    exec python3 src/plot_stats.py "$@"
+fi

@@ -83,6 +83,7 @@ pip install -r requirements.txt
 -speed FPS           vitesse d'affichage en frames/sec (défaut: 10)
 -board-size N        taille du board NxN (défaut: 10)
 -max-steps N         limite de steps par session (défaut: board_size^2 * 10)
+-stats-out PATH      sauvegarder les statistiques par session en JSON
 ```
 
 ---
@@ -127,6 +128,18 @@ pip install -r requirements.txt
 ./scripts/snake -sessions 5 -visual on -load models/1000sess.json -dontlearn -board-size 20
 ```
 
+### Bonus — statistiques de session
+```bash
+# Résumé terminal + sauvegarde JSON (longueur, steps, causes de mort, pommes)
+./scripts/snake -sessions 100 -visual off -load models/1000sess.json -dontlearn -stats-out stats/eval_1000sess_stats.json
+
+# Générer des graphiques à partir du JSON (sauvegardés en <PATH>_plot.png)
+./scripts/plot-stats stats/eval_1000sess_stats.json
+
+# Afficher directement dans une fenêtre au lieu de sauvegarder
+./scripts/plot-stats stats/eval_1000sess_stats.json -show
+```
+
 ### Générer les modèles obligatoires (soutenance)
 ```bash
 ./scripts/snake -sessions 1    -visual off -save models/1sess.json
@@ -137,7 +150,7 @@ pip install -r requirements.txt
 
 ### Vérification mémoire et qualité
 ```bash
-# Norme flake8 (via Docker)
+# Norme flake8
 flake8 ./src
 
 # Mémoire avec faulthandler (segfaults extensions C)
@@ -200,11 +213,12 @@ learn2slither/
 │   ├── interpreter.py  # Vision, état, rewards
 │   ├── agent.py        # Q-table, apprentissage
 │   ├── display.py      # Affichage pygame + terminal
-│   └── constants.py    # Hyperparamètres, couleurs, constantes
+│   ├── constants.py    # Hyperparamètres, couleurs, constantes
+│   └── plot_stats.py   # Bonus: graphiques à partir des stats JSON
 ├── models/             # Modèles sauvegardés (.json)
+├── stats/              # Bonus: stats JSON + graphiques (créé auto si absent)
 ├── scripts/
 │   ├── snake           # Exécutable principal
-│   └── norm.sh         # Vérification norme flake8
-├── Dockerfile
+│   └── plot-stats      # Bonus: génère les graphiques de stats
 └── requirements.txt
 ```
