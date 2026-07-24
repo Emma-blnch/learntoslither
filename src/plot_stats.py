@@ -16,6 +16,7 @@ def parse_args():
     return p.parse_args()
 
 
+# lit json et renvoie separement liste des sessions et le resume
 def load_stats(path):
     with open(path) as f:
         data = json.load(f)
@@ -24,16 +25,19 @@ def load_stats(path):
 
 def plot(sessions, summary, out, show):
     import matplotlib
+    # si pas -show ca genere juste image sans affichage
     if not show:
         matplotlib.use('Agg')
     import matplotlib.pyplot as plt
 
+    # extrait liste des valeurs par session du JSON
     session_ids = [s['session'] for s in sessions]
     lengths = [s['length'] for s in sessions]
     steps = [s['steps'] for s in sessions]
     green = [s['green_eaten'] for s in sessions]
     red = [s['red_eaten'] for s in sessions]
 
+    # recompte les issues
     outcomes = {}
     for s in sessions:
         outcomes[s['outcome']] = outcomes.get(s['outcome'], 0) + 1
@@ -77,12 +81,15 @@ def plot(sessions, summary, out, show):
 
     fig.tight_layout()
 
+    # si chemin de sortie donne sauvegarde fichier
+    # (en creant dossier si besoin)
     if out:
         dirname = os.path.dirname(out)
         if dirname:
             os.makedirs(dirname, exist_ok=True)
         fig.savefig(out)
         print(f'Graphique sauvegardé dans {out}')
+    # si show ca ouvre les graphiques dans une fenetre
     if show:
         plt.show()
 

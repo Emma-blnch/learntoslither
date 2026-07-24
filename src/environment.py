@@ -11,11 +11,6 @@ from snake import Snake
 class Board:
     def __init__(self, size=BOARD_SIZE):
         self.size = size
-        self.grid = None
-        self.snake = None
-        self.green_apples = set()
-        self.red_apples = set()
-        self._game_over = False
         self.reset()
 
     @property
@@ -25,27 +20,36 @@ class Board:
     def reset(self):
         self.grid = [
             [Cell.EMPTY] * self.size for _ in range(self.size)
-        ]
+        ]  # crée grille vide
         self.green_apples = set()
         self.red_apples = set()
         self._game_over = False
-        self._place_snake()
-        for _ in range(GREEN_APPLE_COUNT):
+        self._place_snake()  # place le serpent sur le plateau
+        for _ in range(GREEN_APPLE_COUNT):  # place les pommes vertes
             self._place_apple(Cell.GREEN)
-        for _ in range(RED_APPLE_COUNT):
+        for _ in range(RED_APPLE_COUNT):  # place les pommes rouges
             self._place_apple(Cell.RED)
 
     def _place_snake(self):
+        # direction de départ aléatoire
         direction = random.choice(list(Action))
         dr, dc = DIRECTION_DELTA[direction]
+        # nombre de cases que corps occupe derriere tete :
         span = SNAKE_START_LENGTH - 1
+        # calcule plage pour position de tete pour
+        # etre sur que corps rentre dans plateau
         min_r = max(0, dr * span)
         max_r = min(self.size - 1, self.size - 1 + dr * span)
         min_c = max(0, dc * span)
         max_c = min(self.size - 1, self.size - 1 + dc * span)
+        # tire position random dans plages valides calculées avant
         head_r = random.randint(min_r, max_r)
         head_c = random.randint(min_c, max_c)
+        # combine les deux en tuple (ligne, colonne)
         head = (head_r, head_c)
+        # construit liste des segments en
+        # reculant depuis tete (placer serpent a nouvelle pos)
+        # dans direction INVERSE du deplacment
         body = [
             (head_r - dr * i, head_c - dc * i)
             for i in range(1, SNAKE_START_LENGTH)
@@ -73,31 +77,48 @@ class Board:
             for r in range(self.size)
             for c in range(self.size)
             if self.grid[r][c] == Cell.EMPTY
-        ]
+        ]  # produit liste de tous tuples dont case est vide
+# list comprehension ci dessus eqiuvaut a :
+# result = []
+# for r in range(self.size):
+#     for c in range(self.size):
+#         if self.grid[r][c] == Cell.EMPTY:
+#             result.append((r, c))
 
+    # vrai si position sort des limites [0, size]
+    # sur une des deux coordonnées :
     def _is_out_of_bounds(self, pos):
         r, c = pos
         return r < 0 or r >= self.size or c < 0 or c >= self.size
 
+    # appelé une fois par step :
     def apply_action(self, action):
+        # calcule ou irait la prochaine tete
         next_head = self.snake.next_head(action)
 
+        # si hors plateau = mort
         if self._is_out_of_bounds(next_head):
             self._game_over = True
             return 'wall'
-
+        # si dans corps (sauf dernier bout de queue qui
+        # va se liberer apres déplacement, cells[:-1]) = mort
         if next_head in self.snake.cells[:-1]:
             self._game_over = True
             return 'self'
 
+        # regarde ce qu'il y a sur case ciblée et serpent bouge
         cell_at_next = self.grid[next_head[0]][next_head[1]]
         old_head = self.snake.head
         old_tail = self.snake.move(action)
 
+        # vide case de ancien bout de queue, ancienne tete
+        # devient corps et marque nouvelle tete
         self.grid[old_tail[0]][old_tail[1]] = Cell.EMPTY
         self.grid[old_head[0]][old_head[1]] = Cell.BODY
         self.grid[next_head[0]][next_head[1]] = Cell.HEAD
 
+        # si case ciblée etait pomme verte on la retire
+        # et on fait grandir serpent
         if cell_at_next == Cell.GREEN:
             self.green_apples.discard(next_head)
             self.snake.grow(old_tail)
@@ -105,6 +126,8 @@ class Board:
             self._place_apple(Cell.GREEN)
             return 'green'
 
+        # si c'était pomme rouge, on la retire
+        # et serpent rétrécit
         if cell_at_next == Cell.RED:
             self.red_apples.discard(next_head)
             removed = self.snake.shrink()

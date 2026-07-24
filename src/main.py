@@ -10,6 +10,7 @@ from display import Display
 from agent import Agent
 
 
+# toutes options d'arg possibles
 def parse_args():
     p = argparse.ArgumentParser(prog='snake')
     p.add_argument('-sessions', type=int, default=1,
@@ -35,6 +36,7 @@ def parse_args():
     return p.parse_args()
 
 
+# partie complete
 def run_session(board, interp, agent, display, visual, session, max_steps):
     board.reset()
     step = 0
@@ -44,27 +46,33 @@ def run_session(board, interp, agent, display, visual, session, max_steps):
     green_eaten = 0
     red_eaten = 0
 
+    # vision et etat initial
     vision = interp.get_vision(board, board.snake)
     state = interp.get_state_key(vision)
 
     while not board.is_game_over and alive and step < max_steps:
-        action = agent.choose_action(state)
-        event = board.apply_action(action)
-        reward = interp.get_reward(event)
+        action = agent.choose_action(state)  # choisit action
+        event = board.apply_action(action)  # applique cette action
+        reward = interp.get_reward(event)  # calcule recompense
 
+        # compte pommes
         if event == 'green':
             green_eaten += 1
         elif event == 'red':
             red_eaten += 1
 
+        # calcule etat/vision suivants
         next_vision = interp.get_vision(board, board.snake)
         next_state = interp.get_state_key(next_vision)
 
+        # maj q-table
         agent.update(state, action, reward, next_state)
 
+        # si -visual on on affiche texte terminal
         if visual:
             print(interp.format_terminal(next_vision, action))
 
+        # rend frame pygame
         alive = display.render(
             board,
             session=session,
@@ -72,6 +80,7 @@ def run_session(board, interp, agent, display, visual, session, max_steps):
             step=step,
         )
 
+        # avance etatcourant au suivant
         state = next_state
         vision = next_vision
         step += 1
@@ -79,6 +88,7 @@ def run_session(board, interp, agent, display, visual, session, max_steps):
 
     agent.decay_epsilon()
 
+    # determine outcome
     if board.is_game_over:
         outcome = event
     elif not alive:
@@ -86,6 +96,7 @@ def run_session(board, interp, agent, display, visual, session, max_steps):
     else:
         outcome = 'timeout'
 
+    # renvoi dict recapitulatif de session
     return {
         'session': session,
         'length': max_length,

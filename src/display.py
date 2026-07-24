@@ -13,6 +13,7 @@ _CELL_COLORS = {
     Cell.RED: COLOR_RED_APPLE,
 }
 
+# contsntes pour barre info sous plateau
 _INFO_BAR_H = 36
 _INFO_FONT_SIZE = 22
 _INFO_COLOR = (30, 30, 30)
@@ -31,6 +32,8 @@ class Display:
         self._step_by_step = False
         if headless:
             return
+        # si pas "-visual off" alors import pygame
+        # pour avoir fenetre du plateau de jeu
         import pygame
         self._pygame = pygame
         pygame.init()
@@ -38,7 +41,7 @@ class Display:
         h = board_size * cell_size + _INFO_BAR_H
         self._screen = pygame.display.set_mode((w, h))
         pygame.display.set_caption('Learn2Slither')
-        self._clock = pygame.time.Clock()
+        self._clock = pygame.time.Clock()  # pour limiter FPS
         self._font = pygame.font.SysFont('monospace', _INFO_FONT_SIZE)
 
     def set_speed(self, fps):
@@ -47,18 +50,23 @@ class Display:
     def set_step_by_step(self, enabled):
         self._step_by_step = enabled
 
+    # si pas headless, dessine le plateau + barre info
     def render(self, board, session=0, length=0, step=0):
         if self.headless:
             return True
         pg = self._pygame
         self._draw_board(board)
         self._draw_info(session, length, step)
-        pg.display.flip()
+        pg.display.flip()  # affiche frame
         self._clock.tick(self._fps)
+        # si step by step attend input utilisateur
+        # pour afficher prochaine frame
         if self._step_by_step:
             return self._wait_step()
+        # sinon traite les events normalement
         return self._handle_events()
 
+    # remplit le fond et les cases de couleur
     def _draw_board(self, board):
         pg = self._pygame
         cs = self.cell_size
@@ -74,6 +82,7 @@ class Display:
                     self._screen, COLOR_GRID, (x, y, cs, cs), 1
                 )
 
+    # dessine barre d'info
     def _draw_info(self, session, length, step):
         pg = self._pygame
         board_h = self.board_size * self.cell_size
@@ -87,6 +96,8 @@ class Display:
         surf = self._font.render(text, True, _INFO_COLOR)
         self._screen.blit(surf, (8, board_h + 7))
 
+    # parcours events pygame(clavier/souris/fenetre,
+    # ex: touche echap ou croix de la fenetre)
     def _handle_events(self):
         pg = self._pygame
         for event in pg.event.get():
@@ -97,6 +108,7 @@ class Display:
                     return False
         return True
 
+    # attend touche autre que echap
     def _wait_step(self):
         pg = self._pygame
         while True:
@@ -109,6 +121,7 @@ class Display:
                     return True
             self._clock.tick(30)
 
+    # ferme proprement pygame
     def close(self):
         if self.headless:
             return
