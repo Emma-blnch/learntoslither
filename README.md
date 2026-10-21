@@ -1,63 +1,60 @@
-# Learn2Slither — Reinforcement Learning Snake
+# 🐍 Learn2Slither — Snake AI with Reinforcement Learning
 
-Un serpent qui apprend à survivre et à grandir par essais et erreurs,
-en utilisant le Q-learning (reinforcement learning).
+A snake that learns to survive and grow by trial and error, using **Q-learning**,
+built from scratch in Python. 42 Paris project.
 
----
+The snake only sees what is in the 4 directions from its head. It has to learn
+to eat green apples (+1 length), avoid red apples (−1 length), and not crash
+into walls or itself.
 
-## Notions clés
+## 📊 Results
 
-### Reinforcement Learning (RL)
-Paradigme d'apprentissage où un agent interagit avec un environnement,
-reçoit des récompenses ou punitions, et ajuste son comportement pour
-maximiser les récompenses cumulées au fil du temps.
+Evaluation over 100 games on a 10×10 board, learning disabled:
 
-### Q-learning
-Algorithme de RL qui maintient une table de valeurs Q(état, action)
-représentant la qualité estimée d'une action dans un état donné.
+| model | average length | max length | red apples among apples eaten |
+|---|---|---|---|
+| after 100 training sessions | 3.8 | 6 | 31 % |
+| **after 1,000 training sessions** | **16.4** | **32** | **2 %** |
 
-Formule de mise à jour :
+After 1,000 sessions the snake has learned to avoid red apples almost entirely
+and to reach a length of 32 on a 100-cell board.
+
+![statistics of the 1,000-session model](docs/eval_1000sess.png)
+
+## 🧠 How it works
+
+**Q-learning.** The agent keeps a table of values Q(state, action), the expected
+quality of each action in each state, updated after every move:
+
 ```
-Q(s, a) = Q(s, a) + α * (r + γ * max(Q(s', a')) - Q(s, a))
+Q(s, a) = Q(s, a) + α · (r + γ · max Q(s', a') − Q(s, a))
 ```
-- `α` (alpha) : taux d'apprentissage — vitesse de mise à jour des Q-valeurs
-- `γ` (gamma) : facteur d'actualisation — importance des récompenses futures
-- `r` : récompense immédiate reçue
-- `s'` : état suivant après l'action
 
-### Exploration vs Exploitation (epsilon-greedy)
-- **Exploration** : action aléatoire (probabilité epsilon) — découvrir de nouveaux états
-- **Exploitation** : meilleure action connue (probabilité 1-epsilon) — utiliser ce qui a été appris
-- Epsilon décroît au fil des sessions : le serpent explore moins et exploite plus
+- `α`: learning rate · `γ`: discount factor (weight of future rewards)
+- `r`: reward (green apple +15, red apple −10, each step −0.5, death −100)
 
-### State (vision du serpent)
-Le serpent ne voit que dans les 4 directions cardinales depuis sa tête.
-Chaque direction est encodée comme une string de caractères :
-- `W` = Wall (mur)
-- `H` = Snake Head (tête)
-- `S` = Snake body Segment (corps)
-- `G` = Green apple (pomme verte)
-- `R` = Red apple (pomme rouge)
-- `0` = Empty (case vide)
+**Exploration vs exploitation (epsilon-greedy).** With probability ε the snake
+tries a random move, otherwise it plays the best known one. ε decreases after
+each session: the snake explores less and exploits more over time.
 
-La clé d'état donnée à l'agent encode pour chaque direction :
-- danger immédiat dans la case suivante (0/1)
-- présence d'une pomme verte dans cette direction (0/1)
-- présence d'une pomme rouge dans cette direction (0/1)
+**State.** For each of the 4 directions, the agent gets 3 bits: immediate
+danger, green apple in sight, red apple in sight. That's at most 4,096 states,
+and the Q-table converges in about 1,000 sessions.
 
-→ Max 4096 états possibles, Q-table convergée en ~1000 sessions.
+**Architecture.**
 
-### Architecture modulaire
 ```
 Environment → Interpreter → Agent → Environment
 ```
-- **Environment** : grille, serpent, pommes, règles du jeu
-- **Interpreter** : lit l'environnement, produit la vision et le reward
-- **Agent** : reçoit état + reward, met à jour la Q-table, choisit l'action
 
----
+- **Environment**: board, snake, apples, game rules
+- **Interpreter**: reads the board, builds the snake's vision, the state and the reward
+- **Agent**: receives state + reward, updates the Q-table, chooses the next action
 
-## Installation
+Bonus: models trained on 10×10 also play on boards of other sizes, and every
+session can be exported as JSON statistics and plotted.
+
+## ⚙️ Setup
 
 ```bash
 python3 -m venv .venv
@@ -65,160 +62,74 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
----
-
-## Utilisation
+## 🚀 Usage
 
 ```bash
-# Syntaxe générale
-./scripts/snake [options]
+# Watch the trained model play
+./scripts/snake -sessions 3 -visual on -load models/1000sess.json -dontlearn -speed 8
 
-# Options disponibles
--sessions N          nombre de sessions d'entraînement (défaut: 1)
--visual on|off       affichage pygame (défaut: on)
--save PATH           sauvegarder le modèle après entraînement
--load PATH           charger un modèle existant
--dontlearn           désactiver l'apprentissage (évaluation pure)
--step-by-step        avancer manuellement (touche pour chaque step)
--speed FPS           vitesse d'affichage en frames/sec (défaut: 10)
--board-size N        taille du board NxN (défaut: 10)
--max-steps N         limite de steps par session (défaut: board_size^2 * 10)
--stats-out PATH      sauvegarder les statistiques par session en JSON
+# Train from scratch and save the model
+./scripts/snake -sessions 1000 -visual off -save models/my_model.json
+
+# Evaluate a model and export its statistics, then plot them
+./scripts/snake -sessions 100 -visual off -load models/1000sess.json -dontlearn -stats-out stats/eval.json
+./scripts/plot-stats stats/eval.json
 ```
 
----
+Options:
 
-## Commandes de test
-
-### Fonctionnement de base
-```bash
-# Training court headless
-./scripts/snake -sessions 100 -visual off
-
-# Training avec affichage
-./scripts/snake -sessions 5 -visual on -speed 8
-
-# Training et sauvegarde du modèle
-./scripts/snake -sessions 1000 -visual off -save models/1000sess.json
-
-# Charger un modèle et continuer à apprendre
-./scripts/snake -sessions 500 -visual off -load models/1000sess.json -save models/1500sess.json
+```
+-sessions N          number of training sessions (default: 1)
+-visual on|off       pygame display (default: on)
+-save PATH           save the model after training
+-load PATH           load an existing model
+-dontlearn           disable learning (pure evaluation)
+-step-by-step        advance one step per key press
+-speed FPS           display speed in frames/sec (default: 10)
+-board-size N        NxN board size (default: 10)
+-max-steps N         step limit per session (default: board_size² × 10)
+-stats-out PATH      save per-session statistics as JSON
 ```
 
-### Évaluation des modèles (sans apprentissage)
-```bash
-# Évaluer un modèle sur 20 sessions
-./scripts/snake -sessions 20 -visual off -load models/1000sess.json -dontlearn
+Pre-trained models are in `models/` (1, 10, 100, 1,000 and 1,500 sessions).
 
-# Évaluer avec affichage et step-by-step
-./scripts/snake -sessions 3 -visual on -load models/1000sess.json -dontlearn -step-by-step -speed 5
+## 📁 Project structure
 
-# Comparer 3 niveaux d'entraînement
-./scripts/snake -sessions 20 -visual off -load models/1sess.json   -dontlearn
-./scripts/snake -sessions 20 -visual off -load models/10sess.json  -dontlearn
-./scripts/snake -sessions 20 -visual off -load models/100sess.json -dontlearn
+```
+src/
+├── main.py         # CLI, main loop
+├── environment.py  # board and game rules
+├── snake.py        # snake data structure
+├── interpreter.py  # vision, state, rewards
+├── agent.py        # Q-table, learning
+├── display.py      # pygame + terminal display
+├── constants.py    # hyperparameters, colors, constants
+└── plot_stats.py   # bonus: charts from the JSON statistics
+models/             # saved models (.json)
+scripts/            # snake (main executable), plot-stats
 ```
 
-### Bonus — taille de board variable
+<details>
+<summary>🧪 Test commands (defense checklist)</summary>
+
 ```bash
-# Board 5x5 avec le modèle entraîné sur 10x10
-./scripts/snake -sessions 5 -visual on -load models/1000sess.json -dontlearn -board-size 5
-
-# Board 20x20 avec le même modèle
-./scripts/snake -sessions 5 -visual on -load models/1000sess.json -dontlearn -board-size 20
-```
-
-### Bonus — statistiques de session
-```bash
-# Résumé terminal + sauvegarde JSON (longueur, steps, causes de mort, pommes)
-./scripts/snake -sessions 100 -visual off -load models/1000sess.json -dontlearn -stats-out stats/eval_1000sess_stats.json
-
-# Générer des graphiques à partir du JSON (sauvegardés en <PATH>_plot.png)
-./scripts/plot-stats stats/eval_1000sess_stats.json
-
-# Afficher directement dans une fenêtre au lieu de sauvegarder
-./scripts/plot-stats stats/eval_1000sess_stats.json -show
-```
-
-### Générer les modèles obligatoires (soutenance)
-```bash
+# Mandatory models
 ./scripts/snake -sessions 1    -visual off -save models/1sess.json
 ./scripts/snake -sessions 10   -visual off -save models/10sess.json
 ./scripts/snake -sessions 100  -visual off -save models/100sess.json
 ./scripts/snake -sessions 1000 -visual off -save models/1000sess.json
-```
 
-### Vérification mémoire et qualité
-```bash
-# Norme flake8
+# Variable board size (bonus)
+./scripts/snake -sessions 5 -visual on -load models/1000sess.json -dontlearn -board-size 20
+
+# Code style and memory
 flake8 ./src
-
-# Mémoire avec faulthandler (segfaults extensions C)
 PYTHONFAULTHANDLER=1 ./scripts/snake -sessions 1000 -visual off
-valgrind --tool=memcheck ./scripts/snake
 
-# Surveillance RAM pendant un long training
-./scripts/snake -sessions 10000 -visual off -save models/10000sess.json &
-watch -n 2 "ps -o pid,rss,comm -p \$(pgrep -f main.py) \
-    | awk '{print \$1, \$2/1024\"MB\", \$3}'"
+# Expected errors (clear message + exit 1)
+./scripts/snake -sessions abc -visual off              # argparse usage
+./scripts/snake -sessions 1 -visual off -board-size 2  # board-size must be at least 3
+./scripts/snake -sessions 1 -visual off -load models/missing.json  # model file not found
 ```
 
-### Cas d'erreur attendus
-```bash
-# Argument de mauvais type -> usage argparse + exit 1
-./scripts/snake -sessions abc -visual off
-
-# Sessions négatif -> boucle vide, termine proprement
-./scripts/snake -sessions -5 -visual off
-# Game over, max length = 0, max duration = 0
-
-# Sessions 0 -> termine immédiatement
-./scripts/snake -sessions 0 -visual off
-# Game over, max length = 0, max duration = 0
-
-# Board trop petit (< 3) -> message clair + exit 1
-./scripts/snake -sessions 1 -visual off -board-size 2
-# Error: board-size must be at least 3
-
-./scripts/snake -sessions 1 -visual off -board-size 0
-# Error: board-size must be at least 3
-
-# Modèle inexistant -> message clair + exit 1
-./scripts/snake -sessions 1 -visual off -load models/inexistant.json
-# Error: model file not found: models/inexistant.json
-
-# Modèle corrompu ou fichier invalide -> message clair + exit 1
-./scripts/snake -sessions 1 -visual off -load /tmp/corrupt.json
-# Error: invalid model file: /tmp/corrupt.json
-
-# Save vers un chemin inexistant -> session tourne, erreur à la sauvegarde
-./scripts/snake -sessions 1 -visual off -save /nonexistent/path/model.json
-# Game over, max length = X, max duration = Y
-# Error: cannot save model: [Errno 2] No such file or directory: ...
-
-# Aucun argument -> session unique avec valeurs par défaut (visual on)
-./scripts/snake
-```
-
----
-
-## Structure du projet
-
-```
-learn2slither/
-├── src/
-│   ├── main.py         # CLI, boucle principale
-│   ├── environment.py  # Board, règles du jeu
-│   ├── snake.py        # Structure de données du serpent
-│   ├── interpreter.py  # Vision, état, rewards
-│   ├── agent.py        # Q-table, apprentissage
-│   ├── display.py      # Affichage pygame + terminal
-│   ├── constants.py    # Hyperparamètres, couleurs, constantes
-│   └── plot_stats.py   # Bonus: graphiques à partir des stats JSON
-├── models/             # Modèles sauvegardés (.json)
-├── stats/              # Bonus: stats JSON + graphiques (créé auto si absent)
-├── scripts/
-│   ├── snake           # Exécutable principal
-│   └── plot-stats      # Bonus: génère les graphiques de stats
-└── requirements.txt
-```
+</details>
